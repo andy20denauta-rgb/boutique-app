@@ -8,50 +8,43 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
 
       - name: Install dependencies
         run: npm install
 
-      - name: Build
+      - name: Build web app
         run: npm run build
 
       - name: Setup Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install PWABuilder CLI
-        run: npm install -g @pwabuilder/cli
+      - name: Install Bubblewrap CLI
+        run: npm install -g @bubblewrap/cli
 
-      - name: Generate Android package
-        run: pwabuilder package -p android -u ${{ secrets.APP_URL }}
-
-      - name: Sign APK
+      - name: Initialize Bubblewrap project
         run: |
-          cd android-package
-          keytool -genkey -v -keystore boutique.keystore \
-            -alias boutique -keyalg RSA -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Boutique, OU=App, O=Boutique, L=City, S=State, C=US" \
-            -storepass boutique123 -keypass boutique123
-          
-          jarsigner -verbose \
-            -sigalg SHA256withRSA \
-            -digestalg SHA-256 \
-            -keystore boutique.keystore \
-            -storepass boutique123 \
-            -keypass boutique123 \
-            *.apk boutique
+          mkdir android-build && cd android-build
+          npx @bubblewrap/cli init \
+            --manifest "${{ secrets.APP_URL }}/manifest.json" \
+            --directory . \
+            --skipPwaValidation
+
+      - name: Build APK with Bubblewrap
+        run: |
+          cd android-build
+          npx @bubblewrap/cli build --skipPwaValidation
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: boutique-signed-apk
-          path: android-package/*.apk
+          name: boutique-apk
+          path: android-build/app-release-signed.apk
