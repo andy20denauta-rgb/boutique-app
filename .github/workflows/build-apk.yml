@@ -15,17 +15,17 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build web app
-        run: npm run build
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build web app
+        run: npm run build
 
       - name: Install Bubblewrap CLI
         run: npm install -g @bubblewrap/cli
@@ -33,15 +33,15 @@ jobs:
       - name: Initialize Bubblewrap project
         run: |
           mkdir android-build && cd android-build
-          npx @bubblewrap/cli init \
+          echo "n" | npx @bubblewrap/cli init \
             --manifest "${{ secrets.APP_URL }}/manifest.json" \
             --directory . \
             --skipPwaValidation
 
-      - name: Build APK with Bubblewrap
+      - name: Build APK
         run: |
           cd android-build
-          npx @bubblewrap/cli build --skipPwaValidation
+          echo "n" | npx @bubblewrap/cli build --skipPwaValidation
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
